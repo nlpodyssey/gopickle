@@ -103,6 +103,34 @@ func TestLongP1Negative(t *testing.T) {
 	loadsNoErrEqual(t, "L-100200300400L\n.", -100200300400)
 }
 
+func TestLongP1BigPositive(t *testing.T) {
+	// pickle.dumps(100200300400500600700, protocol=1)
+	actual := loadsNoErr(t, "L100200300400500600700L\n.")
+	switch v := actual.(type) {
+	case *big.Int:
+		expected := "100200300400500600700"
+		if v.String() != expected {
+			t.Errorf("expected %s, actual %s", expected, v.String())
+		}
+	default:
+		t.Error("expected big Int", actual)
+	}
+}
+
+func TestLongP1BigNegative(t *testing.T) {
+	// pickle.dumps(-100200300400500600700, protocol=1)
+	actual := loadsNoErr(t, "L-100200300400500600700L\n.")
+	switch v := actual.(type) {
+	case *big.Int:
+		expected := "-100200300400500600700"
+		if v.String() != expected {
+			t.Errorf("expected %s, actual %s", expected, v.String())
+		}
+	default:
+		t.Error("expected big Int", actual)
+	}
+}
+
 func TestStringPython27P0(t *testing.T) {
 	// pickle.dumps('Café', protocol=0)  # Python 2.7
 	// TODO: the string should be decoded

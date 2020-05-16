@@ -465,8 +465,18 @@ func loadLong(u *Unpickler) error {
 	if sub[len(sub)-1] == 'L' {
 		sub = sub[0 : len(sub)-1]
 	}
-	i, err := strconv.ParseInt(string(sub), 10, 64)
+	str := string(sub)
+	i, err := strconv.ParseInt(str, 10, 64)
+
 	if err != nil {
+		if ne, isNe := err.(*strconv.NumError); isNe && ne.Err == strconv.ErrRange {
+			bi, ok := new(big.Int).SetString(str, 10)
+			if !ok {
+				return fmt.Errorf("invalid long data")
+			}
+			u.append(bi)
+			return nil
+		}
 		return err
 	}
 	u.append(int(i))
