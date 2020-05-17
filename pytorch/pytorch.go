@@ -75,15 +75,7 @@ func loadLegacyNoTar(f *os.File) (interface{}, error) {
 	deserializedObjects := make(map[string]StorageInterface)
 
 	u := gopickle.NewUnpickler(f)
-	u.FindClass = func(module, name string) (interface{}, error) {
-		switch module + "." + name {
-		case "torch._utils._rebuild_tensor_v2":
-			return &RebuildTensorV2{}, nil
-		case "torch.FloatStorage":
-			return &FloatStorageClass{}, nil
-		}
-		panic("FIND CLASS: NOT FOUND " + module + " " + name)
-	}
+	u.FindClass = pickleFindClass
 	u.PersistentLoad = func(savedId interface{}) (interface{}, error) {
 		tuple, tupleOk := savedId.(*types.Tuple)
 		if !tupleOk || tuple.Len() == 0 {
@@ -219,4 +211,31 @@ func isZipFile(filename string) bool {
 	}
 	r.Close()
 	return true
+}
+
+func pickleFindClass(module, name string) (interface{}, error) {
+	switch module + "." + name {
+	case "torch._utils._rebuild_tensor_v2":
+		return &RebuildTensorV2{}, nil
+	case "torch.FloatStorage":
+		return &FloatStorageClass{}, nil
+	case "torch.HalfStorage":
+		return &HalfStorageClass{}, nil
+	case "torch.DoubleStorage":
+		return &DoubleStorageClass{}, nil
+	case "torch.CharStorage":
+		return &CharStorageClass{}, nil
+	case "torch.ShortStorage":
+		return &ShortStorageClass{}, nil
+	case "torch.IntStorage":
+		return &IntStorageClass{}, nil
+	case "torch.LongStorage":
+		return &LongStorageClass{}, nil
+	case "torch.ByteStorage":
+		return &ByteStorageClass{}, nil
+	case "torch.BoolStorage":
+		return &BoolStorageClass{}, nil
+	default:
+		return nil, fmt.Errorf("class no found: %s %s", module, name)
+	}
 }

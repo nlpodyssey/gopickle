@@ -6,8 +6,8 @@ package pytorch
 
 import (
 	"encoding/binary"
+	"io"
 	"math"
-	"os"
 )
 
 type StorageClassInterface interface {
@@ -15,7 +15,8 @@ type StorageClassInterface interface {
 }
 
 type StorageInterface interface {
-	SetFromFile(f *os.File) error
+	SetFromFile(r io.Reader) error
+	SetFromFileWithSize(r io.Reader, size int) error
 }
 
 type BaseStorage struct {
@@ -23,16 +24,50 @@ type BaseStorage struct {
 	Location string
 }
 
-// ----- Float -----
+// ----- Half -----
 
-type FloatStorageClass struct{}
-type FloatStorage struct {
+type HalfStorageClass struct{}
+
+var _ StorageClassInterface = &HalfStorageClass{}
+
+func (f *HalfStorageClass) New(size int, location string) StorageInterface {
+	return &HalfStorage{
+		BaseStorage: BaseStorage{Size: size, Location: location},
+		Data:        nil,
+	}
+}
+
+type HalfStorage struct {
 	BaseStorage
 	Data []float32
 }
 
+var _ StorageInterface = &HalfStorage{}
+
+func (f *HalfStorage) SetFromFile(r io.Reader) error {
+	return setFromFile(f, r)
+}
+
+func (f *HalfStorage) SetFromFileWithSize(r io.Reader, size int) error {
+	data := make([]float32, size)
+	br := NewLimitedBufferReader(r, size, 2, 512)
+	for i := 0; i < size; i++ {
+		bytes, err := br.ReadNext()
+		if err != nil {
+			return err
+		}
+		u16 := binary.LittleEndian.Uint16(bytes)
+		data[i] = math.Float32frombits(FloatBits16to32(u16))
+	}
+	f.Data = data
+	return nil
+}
+
+// ----- Float -----
+
+type FloatStorageClass struct{}
+
 var _ StorageClassInterface = &FloatStorageClass{}
-var _ StorageInterface = &FloatStorage{}
 
 func (f *FloatStorageClass) New(size int, location string) StorageInterface {
 	return &FloatStorage{
@@ -41,53 +76,303 @@ func (f *FloatStorageClass) New(size int, location string) StorageInterface {
 	}
 }
 
-func (f *FloatStorage) SetFromFile(file *os.File) error {
-	size, err := readSize(file)
-	if err != nil {
-		return err
-	}
+type FloatStorage struct {
+	BaseStorage
+	Data []float32
+}
 
+var _ StorageInterface = &FloatStorage{}
+
+func (f *FloatStorage) SetFromFile(r io.Reader) error {
+	return setFromFile(f, r)
+}
+
+func (f *FloatStorage) SetFromFileWithSize(r io.Reader, size int) error {
 	data := make([]float32, size)
-	buf := make([]byte, 512*4)
-	for i, left := 0, 4*size; left > 0; {
-		if left < len(buf) {
-			buf = buf[0:left]
-		}
-		_, err := file.Read(buf)
+	br := NewLimitedBufferReader(r, size, 4, 512)
+	for i := 0; i < size; i++ {
+		bytes, err := br.ReadNext()
 		if err != nil {
 			return err
 		}
-		for j := 0; j < len(buf); j += 4 {
-			data[i] =
-				math.Float32frombits(binary.LittleEndian.Uint32(buf[j : j+4]))
-			i++
-		}
-		left -= len(buf)
+		data[i] = math.Float32frombits(binary.LittleEndian.Uint32(bytes))
 	}
 	f.Data = data
 	return nil
 }
 
-func readSize(f *os.File) (int, error) {
-	sizeBuf := make([]byte, 8)
-	_, err := f.Read(sizeBuf)
-	if err != nil {
-		return 0, err
+// ----- Double -----
+
+type DoubleStorageClass struct{}
+
+var _ StorageClassInterface = &DoubleStorageClass{}
+
+func (f *DoubleStorageClass) New(size int, location string) StorageInterface {
+	return &DoubleStorage{
+		BaseStorage: BaseStorage{Size: size, Location: location},
+		Data:        nil,
 	}
-	return int(binary.LittleEndian.Uint64(sizeBuf)), nil
 }
 
-// TODO: DoubleStorage
-// TODO: HalfStorage
-// TODO: LongStorage
-// TODO: IntStorage
-// TODO: ShortStorage
-// TODO: CharStorage
-// TODO: ByteStorage
-// TODO: BoolStorage
-// TODO: BFloat16Storage
-// TODO: ComplexDoubleStorage
-// TODO: ComplexFloatStorage
-// TODO: QUInt8Storage
-// TODO: QInt8Storage
-// TODO: QInt32Storage
+type DoubleStorage struct {
+	BaseStorage
+	Data []float64
+}
+
+var _ StorageInterface = &DoubleStorage{}
+
+func (f *DoubleStorage) SetFromFile(r io.Reader) error {
+	return setFromFile(f, r)
+}
+
+func (f *DoubleStorage) SetFromFileWithSize(r io.Reader, size int) error {
+	data := make([]float64, size)
+	br := NewLimitedBufferReader(r, size, 8, 512)
+	for i := 0; i < size; i++ {
+		bytes, err := br.ReadNext()
+		if err != nil {
+			return err
+		}
+		data[i] = math.Float64frombits(binary.LittleEndian.Uint64(bytes))
+	}
+	f.Data = data
+	return nil
+}
+
+// ----- Char -----
+
+type CharStorageClass struct{}
+
+var _ StorageClassInterface = &CharStorageClass{}
+
+func (f *CharStorageClass) New(size int, location string) StorageInterface {
+	return &CharStorage{
+		BaseStorage: BaseStorage{Size: size, Location: location},
+		Data:        nil,
+	}
+}
+
+type CharStorage struct {
+	BaseStorage
+	Data []int8
+}
+
+var _ StorageInterface = &CharStorage{}
+
+func (f *CharStorage) SetFromFile(r io.Reader) error {
+	return setFromFile(f, r)
+}
+
+func (f *CharStorage) SetFromFileWithSize(r io.Reader, size int) error {
+	data := make([]int8, size)
+	br := NewLimitedBufferReader(r, size, 1, 512)
+	for i := 0; i < size; i++ {
+		bytes, err := br.ReadNext()
+		if err != nil {
+			return err
+		}
+		data[i] = int8(bytes[0])
+	}
+	f.Data = data
+	return nil
+}
+
+// ----- Short -----
+
+type ShortStorageClass struct{}
+
+var _ StorageClassInterface = &ShortStorageClass{}
+
+func (f *ShortStorageClass) New(size int, location string) StorageInterface {
+	return &ShortStorage{
+		BaseStorage: BaseStorage{Size: size, Location: location},
+		Data:        nil,
+	}
+}
+
+type ShortStorage struct {
+	BaseStorage
+	Data []int16
+}
+
+var _ StorageInterface = &ShortStorage{}
+
+func (f *ShortStorage) SetFromFile(r io.Reader) error {
+	return setFromFile(f, r)
+}
+
+func (f *ShortStorage) SetFromFileWithSize(r io.Reader, size int) error {
+	data := make([]int16, size)
+	br := NewLimitedBufferReader(r, size, 2, 512)
+	for i := 0; i < size; i++ {
+		bytes, err := br.ReadNext()
+		if err != nil {
+			return err
+		}
+		data[i] = int16(binary.LittleEndian.Uint16(bytes))
+	}
+	f.Data = data
+	return nil
+}
+
+// ----- Int -----
+
+type IntStorageClass struct{}
+
+var _ StorageClassInterface = &IntStorageClass{}
+
+func (f *IntStorageClass) New(size int, location string) StorageInterface {
+	return &IntStorage{
+		BaseStorage: BaseStorage{Size: size, Location: location},
+		Data:        nil,
+	}
+}
+
+type IntStorage struct {
+	BaseStorage
+	Data []int32
+}
+
+var _ StorageInterface = &IntStorage{}
+
+func (f *IntStorage) SetFromFile(r io.Reader) error {
+	return setFromFile(f, r)
+}
+
+func (f *IntStorage) SetFromFileWithSize(r io.Reader, size int) error {
+	data := make([]int32, size)
+	br := NewLimitedBufferReader(r, size, 4, 512)
+	for i := 0; i < size; i++ {
+		bytes, err := br.ReadNext()
+		if err != nil {
+			return err
+		}
+		data[i] = int32(binary.LittleEndian.Uint32(bytes))
+	}
+	f.Data = data
+	return nil
+}
+
+// ----- Long -----
+
+type LongStorageClass struct{}
+
+var _ StorageClassInterface = &LongStorageClass{}
+
+func (f *LongStorageClass) New(size int, location string) StorageInterface {
+	return &LongStorage{
+		BaseStorage: BaseStorage{Size: size, Location: location},
+		Data:        nil,
+	}
+}
+
+type LongStorage struct {
+	BaseStorage
+	Data []int64
+}
+
+var _ StorageInterface = &LongStorage{}
+
+func (f *LongStorage) SetFromFile(r io.Reader) error {
+	return setFromFile(f, r)
+}
+
+func (f *LongStorage) SetFromFileWithSize(r io.Reader, size int) error {
+	data := make([]int64, size)
+	br := NewLimitedBufferReader(r, size, 8, 512)
+	for i := 0; i < size; i++ {
+		bytes, err := br.ReadNext()
+		if err != nil {
+			return err
+		}
+		data[i] = int64(binary.LittleEndian.Uint64(bytes))
+	}
+	f.Data = data
+	return nil
+}
+
+// ----- Byte -----
+
+type ByteStorageClass struct{}
+
+var _ StorageClassInterface = &ByteStorageClass{}
+
+func (f *ByteStorageClass) New(size int, location string) StorageInterface {
+	return &ByteStorage{
+		BaseStorage: BaseStorage{Size: size, Location: location},
+		Data:        nil,
+	}
+}
+
+type ByteStorage struct {
+	BaseStorage
+	Data []uint8
+}
+
+var _ StorageInterface = &ByteStorage{}
+
+func (f *ByteStorage) SetFromFile(r io.Reader) error {
+	return setFromFile(f, r)
+}
+
+func (f *ByteStorage) SetFromFileWithSize(r io.Reader, size int) error {
+	data := make([]uint8, size)
+	br := NewLimitedBufferReader(r, size, 1, 512)
+	for i := 0; i < size; i++ {
+		bytes, err := br.ReadNext()
+		if err != nil {
+			return err
+		}
+		data[i] = bytes[0]
+	}
+	f.Data = data
+	return nil
+}
+
+// ----- Bool -----
+
+type BoolStorageClass struct{}
+
+var _ StorageClassInterface = &BoolStorageClass{}
+
+func (f *BoolStorageClass) New(size int, location string) StorageInterface {
+	return &BoolStorage{
+		BaseStorage: BaseStorage{Size: size, Location: location},
+		Data:        nil,
+	}
+}
+
+type BoolStorage struct {
+	BaseStorage
+	Data []bool
+}
+
+var _ StorageInterface = &BoolStorage{}
+
+func (f *BoolStorage) SetFromFile(r io.Reader) error {
+	return setFromFile(f, r)
+}
+
+func (f *BoolStorage) SetFromFileWithSize(r io.Reader, size int) error {
+	data := make([]bool, size)
+	br := NewLimitedBufferReader(r, size, 1, 512)
+	for i := 0; i < size; i++ {
+		bytes, err := br.ReadNext()
+		if err != nil {
+			return err
+		}
+		data[i] = bytes[0] == 1
+	}
+	f.Data = data
+	return nil
+}
+
+func setFromFile(s StorageInterface, r io.Reader) error {
+	sizeBuf := make([]byte, 8)
+	_, err := r.Read(sizeBuf)
+	if err != nil {
+		return err
+	}
+	size := int(binary.LittleEndian.Uint64(sizeBuf))
+	return s.SetFromFileWithSize(r, size)
+}
