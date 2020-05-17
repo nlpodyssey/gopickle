@@ -14,6 +14,7 @@ import (
 	"io"
 	"math/big"
 	"os"
+	"path"
 )
 
 const hexMagicNumber = "1950a86a20f9469cfc6c"
@@ -30,8 +31,91 @@ func Load(filename string) (interface{}, error) {
 }
 
 func loadZipFile(filename string) (interface{}, error) {
-	// TODO: ...
-	panic("loadZipFile not implemented")
+	// Open a zip archive for reading.
+	r, err := zip.OpenReader(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+
+	fileRecords := make(map[string]*zip.File, len(r.File))
+	for _, f := range r.File {
+		_, recordName := path.Split(f.Name)
+		fileRecords[recordName] = f
+	}
+
+	if _, isTorchScript := fileRecords["constants.pkl"]; isTorchScript {
+		return nil, fmt.Errorf("TorchScript is not supported")
+	}
+
+	dataFile, hasDataFile := fileRecords["data.pkl"]
+	if !hasDataFile {
+		return nil, fmt.Errorf("data.pkl not found in zip file")
+	}
+	df, err := dataFile.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer df.Close()
+
+	loadedStorages := make(map[string]StorageInterface)
+
+	u := gopickle.NewUnpickler(df)
+	u.FindClass = pickleFindClass
+	u.PersistentLoad = func(savedId interface{}) (interface{}, error) {
+		tuple, tupleOk := savedId.(*types.Tuple)
+		if !tupleOk || tuple.Len() == 0 {
+			return nil, fmt.Errorf("PersistentLoad: non-empty tuple expected, got %#v", savedId)
+		}
+		typename, typenameOk := tuple.Get(0).(string)
+		if !typenameOk {
+			return nil, fmt.Errorf("PersistentLoad: cannot get typename")
+		}
+		if typename != "storage" {
+			return nil, fmt.Errorf("unknown typename for PersistentLoad, expected 'storage' but got '%s'", typename)
+		}
+		if tuple.Len() < 5 {
+			return nil, fmt.Errorf("PersistentLoad: unexpected storage data length")
+		}
+		dataType, dataTypeOk := tuple.Get(1).(StorageClassInterface)
+		key, keyOk := tuple.Get(2).(string)
+		location, locationOk := tuple.Get(3).(string)
+		size, sizeOk := tuple.Get(4).(int)
+		if !dataTypeOk || !keyOk || !locationOk || !sizeOk {
+			return nil, fmt.Errorf("PersistentLoad: unexpected data types")
+		}
+		storage, storageExists := loadedStorages[key]
+		if !storageExists {
+			storage, err = loadTensor(dataType, size, location, key, fileRecords)
+			if err != nil {
+				return nil, err
+			}
+			loadedStorages[key] = storage
+		}
+		return storage, nil
+	}
+	return u.Load()
+}
+
+func loadTensor(
+	dataType StorageClassInterface,
+	size int,
+	location, key string,
+	zipFileRecords map[string]*zip.File,
+) (StorageInterface, error) {
+	file, fileOk := zipFileRecords[key]
+	if !fileOk {
+		return nil, fmt.Errorf("cannot find zip record '%s'", key)
+	}
+	f, err := file.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	storage := dataType.New(size, location)
+	err = storage.SetFromFileWithSize(f, size)
+	return storage, err
 }
 
 func loadLegacyFile(filename string) (interface{}, error) {
@@ -45,9 +129,12 @@ func loadLegacyFile(filename string) (interface{}, error) {
 	for {
 		_, err := tr.Next()
 		switch err {
+		case nil:
+			// TODO: ...
+			panic("legacy load from tar not implemented")
 		case io.EOF:
 			break // End of archive
-		case tar.ErrHeader:
+		case tar.ErrHeader, io.ErrUnexpectedEOF:
 			_, err = f.Seek(0, io.SeekStart)
 			if err != nil {
 				return nil, err
@@ -56,8 +143,6 @@ func loadLegacyFile(filename string) (interface{}, error) {
 		default:
 			return nil, err
 		}
-		// TODO: ...
-		panic("legacy load from tar not implemented")
 	}
 }
 
@@ -79,7 +164,7 @@ func loadLegacyNoTar(f *os.File) (interface{}, error) {
 	u.PersistentLoad = func(savedId interface{}) (interface{}, error) {
 		tuple, tupleOk := savedId.(*types.Tuple)
 		if !tupleOk || tuple.Len() == 0 {
-			return nil, fmt.Errorf("PersistentLoad: non-empty tuple espected")
+			return nil, fmt.Errorf("PersistentLoad: non-empty tuple expected, got %#v", savedId)
 		}
 		typename, typenameOk := tuple.Get(0).(string)
 		if !typenameOk {
@@ -88,7 +173,7 @@ func loadLegacyNoTar(f *os.File) (interface{}, error) {
 
 		switch typename {
 		case "storage":
-			if tuple.Len() != 6 {
+			if tuple.Len() < 6 {
 				return nil, fmt.Errorf(
 					"PersistentLoad: unexpected storage data length")
 			}
