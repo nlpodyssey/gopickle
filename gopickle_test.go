@@ -628,6 +628,7 @@ func TestP4NestedDicts(t *testing.T) {
 // TODO: test LongBinPut
 // TODO: test LongBinGet
 // TODO: test Build
+// TODO: test PersId
 
 func loadsNoErrEqual(t *testing.T, s string, expected interface{}) {
 	actual := loadsNoErr(t, s)

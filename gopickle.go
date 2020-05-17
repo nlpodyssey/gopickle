@@ -264,7 +264,7 @@ func init() {
 	dispatch['L'] = loadLong
 	dispatch['M'] = loadBinInt2
 	dispatch['N'] = loadNone
-	// dispatch['P'] = opPersid
+	dispatch['P'] = loadPersId
 	dispatch['Q'] = loadBinPersId
 	dispatch['R'] = loadReduce
 	dispatch['S'] = loadString
@@ -360,9 +360,20 @@ func loadFrame(u *Unpickler) error {
 	return u.loadFrame(int(frameSize))
 }
 
-// push persistent object; id is taken from string arg
-// func opPersid(u *Unpickler) error {
-// }
+//push persistent object; id is taken from string arg
+func loadPersId(u *Unpickler) error {
+	line, err := u.readLine()
+	if err != nil {
+		return err
+	}
+	pid := string(line[:len(line)-1])
+	result, err := u.PersistentLoad(pid)
+	if err != nil {
+		return err
+	}
+	u.append(result)
+	return nil
+}
 
 // push persistent object; id is taken from stack
 func loadBinPersId(u *Unpickler) error {
