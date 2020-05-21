@@ -307,7 +307,7 @@ func init() {
 	dispatch['\x88'] = loadTrue
 	dispatch['\x89'] = loadFalse
 	dispatch['\x8a'] = loadLong1
-	// dispatch['\x8b'] = opLong4
+	dispatch['\x8b'] = loadLong4
 
 	// Protocol 3 (Python 3.x)
 
@@ -500,48 +500,66 @@ func loadLong1(u *Unpickler) error {
 	if err != nil {
 		return err
 	}
-	buf, err := u.read(int(length))
+	data, err := u.read(int(length))
 	if err != nil {
 		return err
 	}
 
-	msBitSet := buf[len(buf)-1]&0x80 != 0
-
-	if len(buf) <= 8 {
-		var ux, bitMask uint64
-		_ = buf[len(buf)-1]
-		for i := len(buf) - 1; i >= 0; i-- {
-			ux = (ux << 8) | uint64(buf[i])
-			bitMask = (bitMask << 8) | 0xFF
-		}
-		if msBitSet {
-			u.append(-(int(^ux&bitMask) + 1))
-		} else {
-			u.append(int(ux))
-		}
-	} else {
-		x := new(big.Int)
-		_ = buf[len(buf)-1]
-		for i := len(buf) - 1; i >= 0; i-- {
-			x = x.Lsh(x, 8)
-			if msBitSet {
-				x = x.Or(x, big.NewInt(int64(^buf[i])))
-			} else {
-				x = x.Or(x, big.NewInt(int64(buf[i])))
-			}
-		}
-		if msBitSet {
-			x = x.Add(x, big.NewInt(1))
-			x = x.Neg(x)
-		}
-		u.append(x)
-	}
+	u.append(decodeLong(data))
 	return nil
 }
 
 // push really big long
-// func opLong4(u *Unpickler) error {
-// }
+func loadLong4(u *Unpickler) error {
+	buf, err := u.read(4)
+	if err != nil {
+		return err
+	}
+	length := decodeInt32(buf)
+	if length < 0 {
+		return fmt.Errorf("LONG pickle has negative byte count")
+	}
+	data, err := u.read(length)
+	if err != nil {
+		return err
+	}
+
+	u.append(decodeLong(data))
+	return nil
+}
+
+func decodeLong(bytes []byte) interface{} {
+	msBitSet := bytes[len(bytes)-1]&0x80 != 0
+
+	if len(bytes) > 8 {
+		bi := new(big.Int)
+		_ = bytes[len(bytes)-1]
+		for i := len(bytes) - 1; i >= 0; i-- {
+			bi = bi.Lsh(bi, 8)
+			if msBitSet {
+				bi = bi.Or(bi, big.NewInt(int64(^bytes[i])))
+			} else {
+				bi = bi.Or(bi, big.NewInt(int64(bytes[i])))
+			}
+		}
+		if msBitSet {
+			bi = bi.Add(bi, big.NewInt(1))
+			bi = bi.Neg(bi)
+		}
+		return bi
+	}
+
+	var ux, bitMask uint64
+	_ = bytes[len(bytes)-1]
+	for i := len(bytes) - 1; i >= 0; i-- {
+		ux = (ux << 8) | uint64(bytes[i])
+		bitMask = (bitMask << 8) | 0xFF
+	}
+	if msBitSet {
+		return -(int(^ux&bitMask) + 1)
+	}
+	return int(ux)
+}
 
 // push float object; decimal string argument
 func loadFloat(u *Unpickler) error {

@@ -635,6 +635,7 @@ func TestP4NestedDicts(t *testing.T) {
 // TODO: test Dup
 // TODO: test Inst
 // TODO: test Obj
+// TODO: test Long4
 
 func loadsNoErrEqual(t *testing.T, s string, expected interface{}) {
 	actual := loadsNoErr(t, s)
