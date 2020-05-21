@@ -278,7 +278,7 @@ func init() {
 	dispatch['d'] = loadDict
 	dispatch['}'] = loadEmptyDict
 	dispatch['e'] = loadAppends
-	// dispatch['g'] = opGet
+	dispatch['g'] = loadGet
 	dispatch['h'] = loadBinGet
 	// dispatch['i'] = opInst
 	dispatch['j'] = loadLongBinGet
@@ -979,8 +979,18 @@ func loadDup(u *Unpickler) error {
 }
 
 // push item from memo on stack; index is string arg
-// func opGet(u *Unpickler) error {
-// }
+func loadGet(u *Unpickler) error {
+	line, err := u.readLine()
+	if err != nil {
+		return err
+	}
+	i, err := strconv.Atoi(string(line[:len(line)-1]))
+	if err != nil {
+		return err
+	}
+	u.append(u.memo[i])
+	return nil
+}
 
 // push item from memo on stack; index is 1-byte arg
 func loadBinGet(u *Unpickler) error {

@@ -624,6 +624,7 @@ func TestP4NestedDicts(t *testing.T) {
 }
 
 // TODO: test BinPersId
+// TODO: test Get
 // TODO: test BinGet
 // TODO: test LongBinPut
 // TODO: test LongBinGet
