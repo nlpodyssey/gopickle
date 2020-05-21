@@ -256,7 +256,7 @@ func init() {
 	dispatch['.'] = loadStop
 	dispatch['0'] = loadPop
 	dispatch['1'] = loadPopMark
-	// dispatch['2'] = opDup
+	dispatch['2'] = loadDup
 	dispatch['F'] = loadFloat
 	dispatch['I'] = loadInt
 	dispatch['J'] = loadBinInt
@@ -969,8 +969,14 @@ func loadPopMark(u *Unpickler) error {
 }
 
 // duplicate top stack item
-// func opDup(u *Unpickler) error {
-// }
+func loadDup(u *Unpickler) error {
+	item, err := u.stackLast()
+	if err != nil {
+		return err
+	}
+	u.append(item)
+	return nil
+}
 
 // push item from memo on stack; index is string arg
 // func opGet(u *Unpickler) error {
