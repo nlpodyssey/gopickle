@@ -255,7 +255,7 @@ func init() {
 	dispatch['('] = loadMark
 	dispatch['.'] = loadStop
 	dispatch['0'] = loadPop
-	// dispatch['1'] = opPop_mark
+	dispatch['1'] = loadPopMark
 	// dispatch['2'] = opDup
 	dispatch['F'] = loadFloat
 	dispatch['I'] = loadInt
@@ -963,8 +963,10 @@ func loadPop(u *Unpickler) error {
 }
 
 // discard stack top through topmost markobject
-// func opPop_mark(u *Unpickler) error {
-// }
+func loadPopMark(u *Unpickler) error {
+	_, err := u.popMark()
+	return err
+}
 
 // duplicate top stack item
 // func opDup(u *Unpickler) error {

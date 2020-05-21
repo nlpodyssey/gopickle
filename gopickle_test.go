@@ -630,6 +630,7 @@ func TestP4NestedDicts(t *testing.T) {
 // TODO: test Build
 // TODO: test PersId
 // TODO: test Pop
+// TODO: test PopMark
 
 func loadsNoErrEqual(t *testing.T, s string, expected interface{}) {
 	actual := loadsNoErr(t, s)
