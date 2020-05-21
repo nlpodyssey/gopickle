@@ -318,7 +318,7 @@ func init() {
 
 	dispatch['\x8c'] = loadShortBinUnicode
 	dispatch['\x8d'] = loadBinUnicode8
-	// dispatch['\x8e'] = opBinbytes8
+	dispatch['\x8e'] = loadBinBytes8
 	dispatch['\x8f'] = loadEmptySet
 	dispatch['\x90'] = loadAddItems
 	dispatch['\x91'] = loadFrozenSet
@@ -685,8 +685,22 @@ func loadBinUnicode8(u *Unpickler) error {
 }
 
 // push very long bytes string
-// func opBinbytes8(u *Unpickler) error {
-// }
+func loadBinBytes8(u *Unpickler) error {
+	buf, err := u.read(8)
+	if err != nil {
+		return err
+	}
+	length := binary.LittleEndian.Uint64(buf)
+	if length > math.MaxInt64 {
+		return fmt.Errorf("BINBYTES8 exceeds system's maximum size")
+	}
+	buf, err = u.read(int(length))
+	if err != nil {
+		return err
+	}
+	u.append(buf)
+	return nil
+}
 
 // push bytearray
 // func opBytearray8(u *Unpickler) error {
