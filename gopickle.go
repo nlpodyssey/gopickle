@@ -254,7 +254,7 @@ func init() {
 
 	dispatch['('] = loadMark
 	dispatch['.'] = loadStop
-	// dispatch['0'] = opPop
+	dispatch['0'] = loadPop
 	// dispatch['1'] = opPop_mark
 	// dispatch['2'] = opDup
 	dispatch['F'] = loadFloat
@@ -953,8 +953,14 @@ func loadReduce(u *Unpickler) error {
 }
 
 // discard topmost stack item
-// func opPop(u *Unpickler) error {
-// }
+func loadPop(u *Unpickler) error {
+	if len(u.stack) == 0 {
+		_, err := u.popMark()
+		return err
+	}
+	u.stack = u.stack[:len(u.stack)-1]
+	return nil
+}
 
 // discard stack top through topmost markobject
 // func opPop_mark(u *Unpickler) error {
