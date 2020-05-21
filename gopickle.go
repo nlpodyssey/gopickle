@@ -317,7 +317,7 @@ func init() {
 	// Protocol 4
 
 	dispatch['\x8c'] = loadShortBinUnicode
-	// dispatch['\x8d'] = opBinunicode8
+	dispatch['\x8d'] = loadBinUnicode8
 	// dispatch['\x8e'] = opBinbytes8
 	dispatch['\x8f'] = loadEmptySet
 	dispatch['\x90'] = loadAddItems
@@ -667,8 +667,22 @@ func loadBinUnicode(u *Unpickler) error {
 }
 
 // push very long string
-// func opBinunicode8(u *Unpickler) error {
-// }
+func loadBinUnicode8(u *Unpickler) error {
+	buf, err := u.read(8)
+	if err != nil {
+		return err
+	}
+	length := binary.LittleEndian.Uint64(buf)
+	if length > math.MaxInt64 {
+		return fmt.Errorf("BINUNICODE8 exceeds system's maximum size")
+	}
+	buf, err = u.read(int(length))
+	if err != nil {
+		return err
+	}
+	u.append(string(buf)) // TODO: decode UTF-8?
+	return nil
+}
 
 // push very long bytes string
 // func opBinbytes8(u *Unpickler) error {
