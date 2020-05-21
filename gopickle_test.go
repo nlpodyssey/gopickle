@@ -623,7 +623,7 @@ func TestP4NestedDicts(t *testing.T) {
 	}
 }
 
-func TestListP5ByteArray(t *testing.T) {
+func TestByteArrayP5(t *testing.T) {
 	// pickle.dumps(bytearray(b'ab'), protocol=5)
 	actual := loadsNoErr(t, "\x80\x05\x95\r\x00\x00\x00\x00\x00\x00\x00"+
 		"\x96\x02\x00\x00\x00\x00\x00\x00\x00ab\x94.")
