@@ -280,7 +280,7 @@ func init() {
 	dispatch['e'] = loadAppends
 	dispatch['g'] = loadGet
 	dispatch['h'] = loadBinGet
-	// dispatch['i'] = opInst
+	dispatch['i'] = loadInst
 	dispatch['j'] = loadLongBinGet
 	dispatch['l'] = loadList
 	dispatch[']'] = loadEmptyList
@@ -823,12 +823,54 @@ func loadDict(u *Unpickler) error {
 }
 
 // build & push class instance
-// func opInst(u *Unpickler) error {
-// }
+func loadInst(u *Unpickler) error {
+	line, err := u.readLine()
+	if err != nil {
+		return err
+	}
+	module := string(line[0 : len(line)-1])
+
+	line, err = u.readLine()
+	if err != nil {
+		return err
+	}
+	name := string(line[0 : len(line)-1])
+
+	class, err := u.findClass(module, name)
+	if err != nil {
+		return err
+	}
+
+	args, err := u.popMark()
+	if err != nil {
+		return err
+	}
+
+	return u.instantiate(class, args)
+}
 
 // build & push class instance
 // func opObj(u *Unpickler) error {
 // }
+
+func (u *Unpickler) instantiate(class interface{}, args []interface{}) error {
+	var err error
+	var value interface{}
+	switch ct := class.(type) {
+	case types.Callable:
+		value, err = ct.Call(args...)
+	case types.PyNewable:
+		value, err = ct.PyNew(args...)
+	default:
+		return fmt.Errorf("cannot instantiate %#v", class)
+	}
+
+	if err != nil {
+		return err
+	}
+	u.append(value)
+	return nil
+}
 
 // build object by applying cls.__new__ to argtuple
 func loadNewobj(u *Unpickler) error {
