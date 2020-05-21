@@ -178,9 +178,6 @@ func readLine(r io.Reader) (line []byte, err error) {
 	}
 }
 
-// func (u *Unpickler) readinto() (interface{}, error) {
-// }
-
 func (u *Unpickler) loadFrame(frameSize int) error {
 	buf := make([]byte, frameSize)
 	if u.currentFrame != nil {
@@ -329,7 +326,7 @@ func init() {
 
 	// Protocol 5
 
-	// dispatch['\x96'] = opBytearray8
+	dispatch['\x96'] = loadByteArray8
 	// dispatch['\x97'] = opNext_buffer
 	// dispatch['\x98'] = opReadonly_buffer
 }
@@ -703,8 +700,22 @@ func loadBinBytes8(u *Unpickler) error {
 }
 
 // push bytearray
-// func opBytearray8(u *Unpickler) error {
-// }
+func loadByteArray8(u *Unpickler) error {
+	buf, err := u.read(8)
+	if err != nil {
+		return err
+	}
+	length := binary.LittleEndian.Uint64(buf)
+	if length > math.MaxInt64 {
+		return fmt.Errorf("BYTEARRAY8 exceeds system's maximum size")
+	}
+	buf, err = u.read(int(length))
+	if err != nil {
+		return err
+	}
+	u.append(types.NewByteArrayFromSlice(buf))
+	return nil
+}
 
 // push next out-of-band buffer
 // func opNext_buffer(u *Unpickler) error {

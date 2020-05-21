@@ -623,6 +623,20 @@ func TestP4NestedDicts(t *testing.T) {
 	}
 }
 
+func TestListP5ByteArray(t *testing.T) {
+	// pickle.dumps(bytearray(b'ab'), protocol=5)
+	actual := loadsNoErr(t, "\x80\x05\x95\r\x00\x00\x00\x00\x00\x00\x00"+
+		"\x96\x02\x00\x00\x00\x00\x00\x00\x00ab\x94.")
+	switch v := actual.(type) {
+	case *types.ByteArray:
+		if v.Len() != 2 || v.Get(0) != 'a' || v.Get(1) != 'b' {
+			t.Error("expected b'ab', actual:", actual)
+		}
+	default:
+		t.Error("expected ByteArray, actual:", actual)
+	}
+}
+
 // TODO: test BinPersId
 // TODO: test Get
 // TODO: test BinGet
