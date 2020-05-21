@@ -284,7 +284,7 @@ func init() {
 	dispatch['j'] = loadLongBinGet
 	dispatch['l'] = loadList
 	dispatch[']'] = loadEmptyList
-	// dispatch['o'] = opObj
+	dispatch['o'] = loadObj
 	dispatch['p'] = loadPut
 	dispatch['q'] = loadBinPut
 	dispatch['r'] = loadLongBinPut
@@ -850,8 +850,19 @@ func loadInst(u *Unpickler) error {
 }
 
 // build & push class instance
-// func opObj(u *Unpickler) error {
-// }
+func loadObj(u *Unpickler) error {
+	// Stack is ... markobject classobject arg1 arg2 ...
+	args, err := u.popMark()
+	if err != nil {
+		return err
+	}
+	if len(args) == 0 {
+		return fmt.Errorf("OBJ class missing")
+	}
+	class := args[0]
+	args = args[1:len(args)]
+	return u.instantiate(class, args)
+}
 
 func (u *Unpickler) instantiate(class interface{}, args []interface{}) error {
 	var err error
