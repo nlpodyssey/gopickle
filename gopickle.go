@@ -359,6 +359,9 @@ func loadFrame(u *Unpickler) error {
 
 //push persistent object; id is taken from string arg
 func loadPersId(u *Unpickler) error {
+	if u.PersistentLoad == nil {
+		return fmt.Errorf("unsupported persistent ID encountered")
+	}
 	line, err := u.readLine()
 	if err != nil {
 		return err
