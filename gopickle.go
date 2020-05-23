@@ -46,6 +46,7 @@ type Unpickler struct {
 	PersistentLoad func(interface{}) (interface{}, error)
 	GetExtension   func(code int) (interface{}, error)
 	NextBuffer     func() (interface{}, error)
+	MakeReadOnly   func(interface{}) (interface{}, error)
 }
 
 func NewUnpickler(r io.Reader) Unpickler {
@@ -330,7 +331,7 @@ func init() {
 
 	dispatch['\x96'] = loadByteArray8
 	dispatch['\x97'] = loadNextBuffer
-	// dispatch['\x98'] = opReadonly_buffer
+	dispatch['\x98'] = loadReadOnlyBuffer
 }
 
 // identify pickle protocol
@@ -736,8 +737,21 @@ func loadNextBuffer(u *Unpickler) error {
 }
 
 // make top of stack readonly
-// func opReadonly_buffer(u *Unpickler) error {
-// }
+func loadReadOnlyBuffer(u *Unpickler) error {
+	if u.MakeReadOnly == nil {
+		return nil
+	}
+	buf, err := u.stackPop()
+	if err != nil {
+		return err
+	}
+	buf, err = u.MakeReadOnly(buf)
+	if err != nil {
+		return err
+	}
+	u.append(buf)
+	return nil
+}
 
 // push string; counted binary string argument < 256 bytes
 func loadShortBinString(u *Unpickler) error {
