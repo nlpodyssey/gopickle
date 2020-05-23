@@ -44,6 +44,7 @@ type Unpickler struct {
 	memo           map[int]interface{}
 	FindClass      func(module, name string) (interface{}, error)
 	PersistentLoad func(interface{}) (interface{}, error)
+	GetExtension   func(code int) (interface{}, error)
 }
 
 func NewUnpickler(r io.Reader) Unpickler {
@@ -295,9 +296,9 @@ func init() {
 
 	dispatch['\x80'] = loadProto
 	dispatch['\x81'] = loadNewobj
-	// dispatch['\x82'] = opExt1
-	// dispatch['\x83'] = opExt2
-	// dispatch['\x84'] = opExt4
+	dispatch['\x82'] = opExt1
+	dispatch['\x83'] = opExt2
+	dispatch['\x84'] = opExt4
 	dispatch['\x85'] = loadTuple1
 	dispatch['\x86'] = loadTuple2
 	dispatch['\x87'] = loadTuple3
@@ -1026,16 +1027,57 @@ func loadStackGlobal(u *Unpickler) error {
 }
 
 // push object from extension registry; 1-byte index
-// func opExt1(u *Unpickler) error {
-// }
+func opExt1(u *Unpickler) error {
+	if u.GetExtension == nil {
+		return fmt.Errorf("unsupported extension code encountered")
+	}
+	i, err := u.readOne()
+	if err != nil {
+		return err
+	}
+	obj, err := u.GetExtension(int(i))
+	if err != nil {
+		return err
+	}
+	u.append(obj)
+	return nil
+}
 
 // ditto, but 2-byte index
-// func opExt2(u *Unpickler) error {
-// }
+func opExt2(u *Unpickler) error {
+	if u.GetExtension == nil {
+		return fmt.Errorf("unsupported extension code encountered")
+	}
+	buf, err := u.read(2)
+	if err != nil {
+		return err
+	}
+	code := int(binary.LittleEndian.Uint16(buf))
+	obj, err := u.GetExtension(code)
+	if err != nil {
+		return err
+	}
+	u.append(obj)
+	return nil
+}
 
 // ditto, but 4-byte index
-// func opExt4(u *Unpickler) error {
-// }
+func opExt4(u *Unpickler) error {
+	if u.GetExtension == nil {
+		return fmt.Errorf("unsupported extension code encountered")
+	}
+	buf, err := u.read(4)
+	if err != nil {
+		return err
+	}
+	code := int(binary.LittleEndian.Uint32(buf))
+	obj, err := u.GetExtension(code)
+	if err != nil {
+		return err
+	}
+	u.append(obj)
+	return nil
+}
 
 // apply callable to argtuple, both on stack
 func loadReduce(u *Unpickler) error {

@@ -652,6 +652,9 @@ func TestByteArrayP5(t *testing.T) {
 // TODO: test Long4
 // TODO: test BinUnicode8
 // TODO: test BinBytes8
+// TODO: test Ext1
+// TODO: test Ext2
+// TODO: test Ext4
 
 func loadsNoErrEqual(t *testing.T, s string, expected interface{}) {
 	actual := loadsNoErr(t, s)
