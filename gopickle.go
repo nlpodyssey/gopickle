@@ -297,7 +297,7 @@ func init() {
 	// Protocol 2
 
 	dispatch['\x80'] = loadProto
-	dispatch['\x81'] = loadNewobj
+	dispatch['\x81'] = loadNewObj
 	dispatch['\x82'] = opExt1
 	dispatch['\x83'] = opExt2
 	dispatch['\x84'] = opExt4
@@ -969,7 +969,7 @@ func (u *Unpickler) instantiate(class interface{}, args []interface{}) error {
 }
 
 // build object by applying cls.__new__ to argtuple
-func loadNewobj(u *Unpickler) error {
+func loadNewObj(u *Unpickler) error {
 	args, err := u.stackPop()
 	if err != nil {
 		return err
