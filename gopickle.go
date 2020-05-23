@@ -45,6 +45,7 @@ type Unpickler struct {
 	FindClass      func(module, name string) (interface{}, error)
 	PersistentLoad func(interface{}) (interface{}, error)
 	GetExtension   func(code int) (interface{}, error)
+	NextBuffer     func() (interface{}, error)
 }
 
 func NewUnpickler(r io.Reader) Unpickler {
@@ -328,7 +329,7 @@ func init() {
 	// Protocol 5
 
 	dispatch['\x96'] = loadByteArray8
-	// dispatch['\x97'] = opNext_buffer
+	dispatch['\x97'] = loadNextBuffer
 	// dispatch['\x98'] = opReadonly_buffer
 }
 
@@ -722,8 +723,17 @@ func loadByteArray8(u *Unpickler) error {
 }
 
 // push next out-of-band buffer
-// func opNext_buffer(u *Unpickler) error {
-// }
+func loadNextBuffer(u *Unpickler) error {
+	if u.NextBuffer == nil {
+		return fmt.Errorf("pickle stream refers to out-of-band data but NextBuffer was not given")
+	}
+	buf, err := u.NextBuffer()
+	if err != nil {
+		return err
+	}
+	u.append(buf)
+	return nil
+}
 
 // make top of stack readonly
 // func opReadonly_buffer(u *Unpickler) error {
