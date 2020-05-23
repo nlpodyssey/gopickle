@@ -322,7 +322,7 @@ func init() {
 	dispatch['\x8f'] = loadEmptySet
 	dispatch['\x90'] = loadAddItems
 	dispatch['\x91'] = loadFrozenSet
-	// dispatch['\x92'] = opNewobj_ex
+	dispatch['\x92'] = loadNewObjEx
 	dispatch['\x93'] = loadStackGlobal
 	dispatch['\x94'] = loadMemoize
 	dispatch['\x95'] = loadFrame
@@ -997,8 +997,40 @@ func loadNewObj(u *Unpickler) error {
 }
 
 // like NEWOBJ but work with keyword only arguments
-// func opNewobj_ex(u *Unpickler) error {
-// }
+func loadNewObjEx(u *Unpickler) error {
+	kwargs, err := u.stackPop()
+	if err != nil {
+		return err
+	}
+
+	args, err := u.stackPop()
+	if err != nil {
+		return err
+	}
+	argsTuple, argsOk := args.(*types.Tuple)
+	if !argsOk {
+		return fmt.Errorf("NEWOBJ_EX args must be *Tuple")
+	}
+
+	rawClass, err := u.stackPop()
+	if err != nil {
+		return err
+	}
+	class, classOk := rawClass.(types.PyNewable)
+	if !classOk {
+		return fmt.Errorf("NEWOBJ_EX requires a PyNewable object")
+	}
+
+	allArgs := []interface{}(*argsTuple)
+	allArgs = append(allArgs, kwargs)
+
+	result, err := class.PyNew(allArgs...)
+	if err != nil {
+		return err
+	}
+	u.append(result)
+	return nil
+}
 
 // push self.find_class(modname, name); 2 string args
 func loadGlobal(u *Unpickler) error {
