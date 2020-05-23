@@ -9,7 +9,7 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
-	"github.com/nlpodyssey/gopickle"
+	"github.com/nlpodyssey/gopickle/pickle"
 	"github.com/nlpodyssey/gopickle/types"
 	"io"
 	"math/big"
@@ -60,7 +60,7 @@ func loadZipFile(filename string) (interface{}, error) {
 
 	loadedStorages := make(map[string]StorageInterface)
 
-	u := gopickle.NewUnpickler(df)
+	u := pickle.NewUnpickler(df)
 	u.FindClass = pickleFindClass
 	u.PersistentLoad = func(savedId interface{}) (interface{}, error) {
 		tuple, tupleOk := savedId.(*types.Tuple)
@@ -159,7 +159,7 @@ func loadLegacyNoTar(f *os.File) (interface{}, error) {
 
 	deserializedObjects := make(map[string]StorageInterface)
 
-	u := gopickle.NewUnpickler(f)
+	u := pickle.NewUnpickler(f)
 	u.FindClass = pickleFindClass
 	u.PersistentLoad = func(savedId interface{}) (interface{}, error) {
 		tuple, tupleOk := savedId.(*types.Tuple)
@@ -285,7 +285,7 @@ func readAndChecProtocolVersion(r io.Reader) error {
 }
 
 func unpickle(r io.Reader) (interface{}, error) {
-	u := gopickle.NewUnpickler(r)
+	u := pickle.NewUnpickler(r)
 	return u.Load()
 }
 
