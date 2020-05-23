@@ -976,7 +976,7 @@ func loadNewobj(u *Unpickler) error {
 	}
 	argsTuple, argsOk := args.(*types.Tuple)
 	if !argsOk {
-		return fmt.Errorf("REDUCE args must be *Tuple")
+		return fmt.Errorf("NEWOBJ args must be *Tuple")
 	}
 
 	rawClass, err := u.stackPop()
