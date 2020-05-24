@@ -28,8 +28,12 @@ type PyNewable interface {
 	PyNew(args ...interface{}) (interface{}, error)
 }
 
+// PyStateSettable is implemented by any value that has a Python-like
+// "__setstate__" method.
 type PyStateSettable interface {
-	// __setstate__
+	// PySetState mimics Python invocation of the "__setstate__" method.
+	//
+	// See: https://docs.python.org/3/library/pickle.html#object.__setstate__
 	PySetState(state interface{}) error
 }
 
