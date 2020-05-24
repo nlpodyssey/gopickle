@@ -37,8 +37,14 @@ type PyStateSettable interface {
 	PySetState(state interface{}) error
 }
 
+// PyDictSettable is implemented by any value that can store dictionary-like
+// key/value pairs. It reflects Python behavior of setting a key/value pair on
+// an object's "__dict__" attribute.
 type PyDictSettable interface {
-	// __dict__
+	// PyDictSet mimics the setting of a key/value pair on an object's
+	//"__dict__" attribute.
+	//
+	// See: https://docs.python.org/3/library/stdtypes.html#object.__dict__
 	PyDictSet(key, value interface{}) error
 }
 
