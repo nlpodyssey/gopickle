@@ -26,10 +26,6 @@ func (l *List) Append(v interface{}) {
 	*l = append(*l, v)
 }
 
-func (l *List) Extend(v ...interface{}) {
-	*l = append(*l, v...)
-}
-
 func (l *List) Get(i int) interface{} {
 	return (*l)[i]
 }
