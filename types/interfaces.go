@@ -16,8 +16,15 @@ type Callable interface {
 	Call(args ...interface{}) (interface{}, error)
 }
 
+// PyNewable is implemented by any value that has a Python-like
+// "__new__" method.
+//
+// It is usually implemented by values representing Python classes.
 type PyNewable interface {
-	// __new__
+	// PyNew mimics Python invocation of the "__new__" method, usually
+	// provided by classes.
+	//
+	// See: https://docs.python.org/3/reference/datamodel.html?#object.__new__
 	PyNew(args ...interface{}) (interface{}, error)
 }
 
