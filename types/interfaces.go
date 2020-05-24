@@ -24,7 +24,7 @@ type PyNewable interface {
 	// PyNew mimics Python invocation of the "__new__" method, usually
 	// provided by classes.
 	//
-	// See: https://docs.python.org/3/reference/datamodel.html?#object.__new__
+	// See: https://docs.python.org/3/reference/datamodel.html#object.__new__
 	PyNew(args ...interface{}) (interface{}, error)
 }
 
@@ -48,7 +48,18 @@ type PyDictSettable interface {
 	PyDictSet(key, value interface{}) error
 }
 
+// PyAttrSettable is implemented by any value on which an existing or new
+// Python-like attribute can be set. In Python this is done with "setattr"
+// builtin function.
 type PyAttrSettable interface {
-	// setattr()
+	// PySetAttr mimics the setting of an arbitrary value to an object's
+	// attribute.
+	//
+	// In Python this is done with "setattr" function, to which object,
+	// attribute name, and value are passed. For an easy and clear
+	// implementation, here instead we require this method to be implemented
+	// on the "object" itself.
+	//
+	// See: https://docs.python.org/3/library/functions.html#setattr
 	PySetAttr(key string, value interface{}) error
 }
