@@ -24,7 +24,7 @@ func NewList() *List {
 // NewListFromSlice makes and returns a new List initialized with the elements
 // of the given slice.
 //
-// The new List a simple type cast of the input slice; the slice is _not_
+// The new List is a simple type cast of the input slice; the slice is _not_
 // copied.
 func NewListFromSlice(slice []interface{}) *List {
 	l := List(slice)
