@@ -21,7 +21,7 @@ func NewDict() *Dict {
 	return &d
 }
 
-// Set sets to into the Dict the given key/value pair.
+// Set sets into the Dict the given key/value pair.
 //
 // If the key is already present, its associated value is replaced with the
 // new one.
