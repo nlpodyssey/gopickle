@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - More and better documentation
 
+### Changed
+- `FrozenSet` implementation was modified, avoiding confusion with `Set`.
+- Replace build CI job with tests and coverage
+
 ### Removed
 - Unused method `List.Extend`
 
