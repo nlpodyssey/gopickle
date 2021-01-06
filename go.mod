@@ -4,4 +4,4 @@
 
 module github.com/nlpodyssey/gopickle
 
-go 1.14
+go 1.15
