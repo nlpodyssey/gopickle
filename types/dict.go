@@ -5,6 +5,7 @@
 package types
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -50,6 +51,16 @@ func (d *Dict) Get(key interface{}) (interface{}, bool) {
 		}
 	}
 	return nil, false
+}
+
+// MustGet returns the value associated with the given key, if if it exists,
+// otherwise it panics.
+func (d *Dict) MustGet(key interface{}) interface{} {
+	value, ok := d.Get(key)
+	if !ok {
+		panic(fmt.Errorf("key not found in Dict: %#v", key))
+	}
+	return value
 }
 
 // Len returns the length of the Dict, that is, the amount of key/value pairs
