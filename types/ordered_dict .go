@@ -99,6 +99,16 @@ func (o *OrderedDict) Get(k interface{}) (interface{}, bool) {
 	return entry.Value, true
 }
 
+// MustGet returns the value associated with the given key, if if it exists,
+// otherwise it panics.
+func (o *OrderedDict) MustGet(key interface{}) interface{} {
+	value, ok := o.Get(key)
+	if !ok {
+		panic(fmt.Errorf("key not found in OrderedDict: %#v", key))
+	}
+	return value
+}
+
 // Len returns the length of the OrderedDict, that is, the amount of key/value
 // pairs contained by the OrderedDict.
 func (o *OrderedDict) Len() int {

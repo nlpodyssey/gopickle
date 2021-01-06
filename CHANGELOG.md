@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - More and better documentation
+- `OrderedDict.MustGet()`
 
 ### Changed
 - `FrozenSet` implementation was modified, avoiding confusion with `Set`.
