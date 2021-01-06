@@ -328,6 +328,9 @@ func makePickleFindClass(fallback func(module, name string) (interface{}, error)
 			return &ByteStorageClass{}, nil
 		case "torch.BoolStorage":
 			return &BoolStorageClass{}, nil
+		case "torch.nn.backends.thnn._get_thnn_function_backend":
+			// this is for historical pickle deserilaization, it is not used otherwise
+			return getThnnFunctionBackend{}, nil
 		default:
 			if fallback == nil {
 				return nil, fmt.Errorf("class not found: %s %s", module, name)
@@ -335,4 +338,13 @@ func makePickleFindClass(fallback func(module, name string) (interface{}, error)
 			return fallback(module, name)
 		}
 	}
+}
+
+// getThnnFunctionBackend is for historical pickle deserilaization, it is not used otherwise
+type getThnnFunctionBackend struct{}
+
+var _ types.Callable = &getThnnFunctionBackend{}
+
+func (getThnnFunctionBackend) Call(_ ...interface{}) (interface{}, error) {
+	return nil, nil
 }

@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Dict.MustGet()`
 - `pytorch.LoadWithUnpickler()` which allows loading PyTorch modules using a
   custom unpickler.
+- Handle legacy method `torch.nn.backends.thnn._get_thnn_function_backend` when
+  loading pytorch modules.
 
 ### Changed
 - `FrozenSet` implementation was modified, avoiding confusion with `Set`.
