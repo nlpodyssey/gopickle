@@ -1400,11 +1400,10 @@ func loadBuild(u *Unpickler) error {
 	if stateDict, ok := state.(*types.Dict); ok {
 		instPds, instPdsOk := inst.(types.PyDictSettable)
 		if !instPdsOk {
-			return fmt.Errorf(
-				"BUILD requires a PyDictSettable instance: %#v", inst)
+			return fmt.Errorf("BUILD requires a PyDictSettable instance: %#v", inst)
 		}
-		for k, v := range *stateDict {
-			err := instPds.PyDictSet(k, v)
+		for _, entry := range *stateDict {
+			err := instPds.PyDictSet(entry.Key, entry.Value)
 			if err != nil {
 				return err
 			}
@@ -1417,12 +1416,15 @@ func loadBuild(u *Unpickler) error {
 			return fmt.Errorf(
 				"BUILD requires a PyAttrSettable instance: %#v", inst)
 		}
-		for k, v := range *slotStateDict {
-			sk, keyOk := k.(string)
+		for _, entry := range *slotStateDict {
+			sk, keyOk := entry.Key.(string)
 			if !keyOk {
 				return fmt.Errorf("BUILD requires string slot state keys")
 			}
-			instSa.PySetAttr(sk, v)
+			err := instSa.PySetAttr(sk, entry.Value)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
