@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - More and better documentation
 - `OrderedDict.MustGet()`
 - `Dict.MustGet()`
+- `pytorch.LoadWithUnpickler()` which allows loading PyTorch modules using a
+  custom unpickler.
 
 ### Changed
 - `FrozenSet` implementation was modified, avoiding confusion with `Set`.

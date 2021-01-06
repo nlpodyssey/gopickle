@@ -24,13 +24,22 @@ var ErrInvalidMagicNumber = errors.New("invalid pytorch magic number")
 var ErrInvalidProtocolVersion = errors.New("invalid pytorch protocol version")
 
 func Load(filename string) (interface{}, error) {
-	if !isZipFile(filename) {
-		return loadLegacyFile(filename)
+	newUnpickler := func(r io.Reader) pickle.Unpickler {
+		return pickle.NewUnpickler(r)
 	}
-	return loadZipFile(filename)
+	return LoadWithUnpickler(filename, newUnpickler)
 }
 
-func loadZipFile(filename string) (interface{}, error) {
+// LoadWithUnpickler is like Load, but it accepts a newUnpickler function which
+// is used to create new customized pickle.Unpickler instances.
+func LoadWithUnpickler(filename string, newUnpickler func(r io.Reader) pickle.Unpickler) (interface{}, error) {
+	if !isZipFile(filename) {
+		return loadLegacyFile(filename, newUnpickler)
+	}
+	return loadZipFile(filename, newUnpickler)
+}
+
+func loadZipFile(filename string, newUnpickler func(r io.Reader) pickle.Unpickler) (interface{}, error) {
 	// Open a zip archive for reading.
 	r, err := zip.OpenReader(filename)
 	if err != nil {
@@ -60,8 +69,8 @@ func loadZipFile(filename string) (interface{}, error) {
 
 	loadedStorages := make(map[string]StorageInterface)
 
-	u := pickle.NewUnpickler(df)
-	u.FindClass = pickleFindClass
+	u := newUnpickler(df)
+	u.FindClass = makePickleFindClass(u.FindClass)
 	u.PersistentLoad = func(savedId interface{}) (interface{}, error) {
 		tuple, tupleOk := savedId.(*types.Tuple)
 		if !tupleOk || tuple.Len() == 0 {
@@ -118,7 +127,7 @@ func loadTensor(
 	return storage, err
 }
 
-func loadLegacyFile(filename string) (interface{}, error) {
+func loadLegacyFile(filename string, newUnpickler func(r io.Reader) pickle.Unpickler) (interface{}, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -139,14 +148,14 @@ func loadLegacyFile(filename string) (interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
-			return loadLegacyNoTar(f)
+			return loadLegacyNoTar(f, newUnpickler)
 		default:
 			return nil, err
 		}
 	}
 }
 
-func loadLegacyNoTar(f *os.File) (interface{}, error) {
+func loadLegacyNoTar(f *os.File, newUnpickler func(r io.Reader) pickle.Unpickler) (interface{}, error) {
 	if err := readAndCheckMagicNumber(f); err != nil {
 		return nil, err
 	}
@@ -159,8 +168,8 @@ func loadLegacyNoTar(f *os.File) (interface{}, error) {
 
 	deserializedObjects := make(map[string]StorageInterface)
 
-	u := pickle.NewUnpickler(f)
-	u.FindClass = pickleFindClass
+	u := newUnpickler(f)
+	u.FindClass = makePickleFindClass(u.FindClass)
 	u.PersistentLoad = func(savedId interface{}) (interface{}, error) {
 		tuple, tupleOk := savedId.(*types.Tuple)
 		if !tupleOk || tuple.Len() == 0 {
@@ -208,12 +217,10 @@ func loadLegacyNoTar(f *os.File) (interface{}, error) {
 				return nil, fmt.Errorf("PersistentLoad: unexpected view metadata type")
 			}
 		case "module":
-			// TODO: ...
-			// Ignore containers that don't have any sources saved
-			// if all(data[1:]):
-			//     _check_container_source(*data)
-			// return data[0]
-			panic("PersistentLoad module not implemented")
+			if tuple.Len() < 2 {
+				return nil, fmt.Errorf("PersistentLoad: unexpected module data length")
+			}
+			return tuple.Get(1), nil
 		default:
 			return nil, fmt.Errorf("Unexpected saved ID type: %s", typename)
 		}
@@ -298,29 +305,34 @@ func isZipFile(filename string) bool {
 	return true
 }
 
-func pickleFindClass(module, name string) (interface{}, error) {
-	switch module + "." + name {
-	case "torch._utils._rebuild_tensor_v2":
-		return &RebuildTensorV2{}, nil
-	case "torch.FloatStorage":
-		return &FloatStorageClass{}, nil
-	case "torch.HalfStorage":
-		return &HalfStorageClass{}, nil
-	case "torch.DoubleStorage":
-		return &DoubleStorageClass{}, nil
-	case "torch.CharStorage":
-		return &CharStorageClass{}, nil
-	case "torch.ShortStorage":
-		return &ShortStorageClass{}, nil
-	case "torch.IntStorage":
-		return &IntStorageClass{}, nil
-	case "torch.LongStorage":
-		return &LongStorageClass{}, nil
-	case "torch.ByteStorage":
-		return &ByteStorageClass{}, nil
-	case "torch.BoolStorage":
-		return &BoolStorageClass{}, nil
-	default:
-		return nil, fmt.Errorf("class no found: %s %s", module, name)
+func makePickleFindClass(fallback func(module, name string) (interface{}, error)) func(module, name string) (interface{}, error) {
+	return func(module, name string) (interface{}, error) {
+		switch module + "." + name {
+		case "torch._utils._rebuild_tensor_v2":
+			return &RebuildTensorV2{}, nil
+		case "torch.FloatStorage":
+			return &FloatStorageClass{}, nil
+		case "torch.HalfStorage":
+			return &HalfStorageClass{}, nil
+		case "torch.DoubleStorage":
+			return &DoubleStorageClass{}, nil
+		case "torch.CharStorage":
+			return &CharStorageClass{}, nil
+		case "torch.ShortStorage":
+			return &ShortStorageClass{}, nil
+		case "torch.IntStorage":
+			return &IntStorageClass{}, nil
+		case "torch.LongStorage":
+			return &LongStorageClass{}, nil
+		case "torch.ByteStorage":
+			return &ByteStorageClass{}, nil
+		case "torch.BoolStorage":
+			return &BoolStorageClass{}, nil
+		default:
+			if fallback == nil {
+				return nil, fmt.Errorf("class not found: %s %s", module, name)
+			}
+			return fallback(module, name)
+		}
 	}
 }
