@@ -985,7 +985,7 @@ func loadNewObj(u *Unpickler) error {
 	}
 	class, classOk := rawClass.(types.PyNewable)
 	if !classOk {
-		return fmt.Errorf("NEWOBJ requires a PyNewable object")
+		return fmt.Errorf("NEWOBJ requires a PyNewable object: %#v", rawClass)
 	}
 
 	result, err := class.PyNew(*argsTuple...)
