@@ -4,6 +4,10 @@
 
 package types
 
+import (
+	"reflect"
+)
+
 // DictSetter is implemented by any value that exhibits a dict-like behaviour,
 // allowing arbitrary key/value pairs to be set.
 type DictSetter interface {
@@ -11,29 +15,41 @@ type DictSetter interface {
 }
 
 // Dict represents a Python "dict" (builtin type).
-type Dict map[interface{}]interface{}
+//
+// It is implemented as a slice, instead of a map, because in Go not
+// all types can be map's keys (e.g. slices).
+type Dict []*DictEntry
+
+type DictEntry struct {
+	Key   interface{}
+	Value interface{}
+}
 
 var _ DictSetter = &Dict{}
 
 // NewDict makes and returns a new empty Dict.
 func NewDict() *Dict {
-	d := make(Dict)
+	d := make(Dict, 0)
 	return &d
 }
 
 // Set sets into the Dict the given key/value pair.
-//
-// If the key is already present, its associated value is replaced with the
-// new one.
 func (d *Dict) Set(key, value interface{}) {
-	(*d)[key] = value
+	*d = append(*d, &DictEntry{
+		Key:   key,
+		Value: value,
+	})
 }
 
 // Get returns the value associated with the given key (if any), and whether
 // the key is present or not.
 func (d *Dict) Get(key interface{}) (interface{}, bool) {
-	value, ok := (*d)[key]
-	return value, ok
+	for _, entry := range *d {
+		if reflect.DeepEqual(entry.Key, key) {
+			return entry.Value, true
+		}
+	}
+	return nil, false
 }
 
 // Len returns the length of the Dict, that is, the amount of key/value pairs

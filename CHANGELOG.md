@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `FrozenSet` implementation was modified, avoiding confusion with `Set`.
 - Replace build CI job with tests and coverage
+- `Dict` has been reimplemented using a slice, instead of a map, because in Go
+  not all types can be map's keys (e.g. slices).
 
 ### Removed
 - Unused method `List.Extend`
