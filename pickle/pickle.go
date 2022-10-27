@@ -8,13 +8,14 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/nlpodyssey/gopickle/types"
 	"io"
 	"math"
 	"math/big"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/nlpodyssey/gopickle/types"
 )
 
 const HighestProtocol byte = 5
@@ -360,7 +361,7 @@ func loadFrame(u *Unpickler) error {
 	return u.loadFrame(int(frameSize))
 }
 
-//push persistent object; id is taken from string arg
+// push persistent object; id is taken from string arg
 func loadPersId(u *Unpickler) error {
 	if u.PersistentLoad == nil {
 		return fmt.Errorf("unsupported persistent ID encountered")
