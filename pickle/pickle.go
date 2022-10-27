@@ -78,7 +78,7 @@ func NewUnpickler(ior io.Reader) Unpickler {
 	}
 	return Unpickler{
 		r:    r,
-		memo: make(map[int]interface{}, 256),
+		memo: make(map[int]interface{}, 256+128),
 	}
 }
 

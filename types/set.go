@@ -22,7 +22,7 @@ type setEmptyStruct struct{}
 
 // NewSet makes and returns a new empty Set.
 func NewSet() *Set {
-	s := make(Set)
+	s := make(Set, 4)
 	return &s
 }
 
