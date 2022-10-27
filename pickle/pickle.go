@@ -946,7 +946,7 @@ func loadObj(u *Unpickler) error {
 		return fmt.Errorf("OBJ class missing")
 	}
 	class := args[0]
-	args = args[1:len(args)]
+	args = args[1:]
 	return u.instantiate(class, args)
 }
 
