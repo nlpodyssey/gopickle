@@ -5,6 +5,7 @@
 package pickle
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -26,7 +27,7 @@ func Load(filename string) (interface{}, error) {
 		return nil, err
 	}
 	defer f.Close()
-	u := NewUnpickler(f)
+	u := NewUnpickler(bufio.NewReader(f))
 	return u.Load()
 }
 
