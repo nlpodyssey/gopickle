@@ -30,7 +30,7 @@ var _ DictSetter = &Dict{}
 
 // NewDict makes and returns a new empty Dict.
 func NewDict() *Dict {
-	d := make(Dict, 0)
+	d := make(Dict, 0, 4)
 	return &d
 }
 

@@ -53,13 +53,13 @@ type Unpickler struct {
 func NewUnpickler(r io.Reader) Unpickler {
 	return Unpickler{
 		r:    r,
-		memo: make(map[int]interface{}),
+		memo: make(map[int]interface{}, 256),
 	}
 }
 
 func (u *Unpickler) Load() (interface{}, error) {
-	u.metaStack = make([][]interface{}, 0)
-	u.stack = make([]interface{}, 0)
+	u.metaStack = make([][]interface{}, 0, 16)
+	u.stack = make([]interface{}, 0, 16)
 	u.proto = 0
 
 	for {
@@ -1435,7 +1435,7 @@ func loadBuild(u *Unpickler) error {
 // push special markobject on stack
 func loadMark(u *Unpickler) error {
 	u.metaStack = append(u.metaStack, u.stack)
-	u.stack = make([]interface{}, 0)
+	u.stack = make([]interface{}, 0, 16)
 	return nil
 }
 
