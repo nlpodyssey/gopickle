@@ -36,8 +36,29 @@ func Loads(s string) (interface{}, error) {
 	return u.Load()
 }
 
+type reader interface {
+	io.Reader
+	io.ByteReader
+}
+
+type bytereader struct {
+	io.Reader
+	bytebuf [1]byte
+}
+
+func (r *bytereader) ReadByte() (byte, error) {
+	n, err := r.Read(r.bytebuf[:])
+	if n == 1 {
+		return r.bytebuf[0], nil
+	}
+	if err == nil {
+		err = io.EOF
+	}
+	return 0, err
+}
+
 type Unpickler struct {
-	r              io.Reader
+	r              reader
 	proto          byte
 	currentFrame   *bytes.Reader
 	stack          []interface{}
@@ -50,7 +71,11 @@ type Unpickler struct {
 	MakeReadOnly   func(interface{}) (interface{}, error)
 }
 
-func NewUnpickler(r io.Reader) Unpickler {
+func NewUnpickler(ior io.Reader) Unpickler {
+	r, ok := ior.(reader)
+	if !ok {
+		r = &bytereader{Reader: ior}
+	}
 	return Unpickler{
 		r:    r,
 		memo: make(map[int]interface{}, 256),
@@ -138,6 +163,17 @@ func (u *Unpickler) read(n int) ([]byte, error) {
 }
 
 func (u *Unpickler) readOne() (byte, error) {
+	var err error
+	var b byte
+	if u.currentFrame != nil {
+		b, err = u.currentFrame.ReadByte()
+	} else {
+		b, err = u.r.ReadByte()
+	}
+	if err == nil {
+		return b, nil
+	}
+
 	buf, err := u.read(1)
 	if err != nil {
 		return 0, err
@@ -166,17 +202,17 @@ func (u *Unpickler) readLine() ([]byte, error) {
 	return readLine(u.r)
 }
 
-func readLine(r io.Reader) (line []byte, err error) {
+func readLine(r reader) (line []byte, err error) {
 	line = make([]byte, 0, 32)
-	b := make([]byte, 1)
-	var n int
+
+	var b byte
 	for {
-		n, err = r.Read(b)
-		if n != 1 {
+		b, err = r.ReadByte()
+		if err != nil {
 			return
 		}
-		line = append(line, b[0])
-		if b[0] == '\n' || err != nil {
+		line = append(line, b)
+		if b == '\n' {
 			return
 		}
 	}
