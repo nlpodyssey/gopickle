@@ -19,7 +19,7 @@ type DictSetter interface {
 //
 // It is implemented as a slice, instead of a map, because in Go not
 // all types can be map's keys (e.g. slices).
-type Dict []*DictEntry
+type Dict []DictEntry
 
 type DictEntry struct {
 	Key   interface{}
@@ -30,13 +30,13 @@ var _ DictSetter = &Dict{}
 
 // NewDict makes and returns a new empty Dict.
 func NewDict() *Dict {
-	d := make(Dict, 0)
+	d := make(Dict, 0, 4)
 	return &d
 }
 
 // Set sets into the Dict the given key/value pair.
 func (d *Dict) Set(key, value interface{}) {
-	*d = append(*d, &DictEntry{
+	*d = append(*d, DictEntry{
 		Key:   key,
 		Value: value,
 	})

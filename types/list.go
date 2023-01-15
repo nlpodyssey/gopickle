@@ -17,7 +17,7 @@ var _ ListAppender = &List{}
 
 // NewList makes and returns a new empty List.
 func NewList() *List {
-	l := make(List, 0)
+	l := make(List, 0, 4)
 	return &l
 }
 

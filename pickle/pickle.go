@@ -5,16 +5,18 @@
 package pickle
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/nlpodyssey/gopickle/types"
 	"io"
 	"math"
 	"math/big"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/nlpodyssey/gopickle/types"
 )
 
 const HighestProtocol byte = 5
@@ -25,7 +27,7 @@ func Load(filename string) (interface{}, error) {
 		return nil, err
 	}
 	defer f.Close()
-	u := NewUnpickler(f)
+	u := NewUnpickler(bufio.NewReader(f))
 	return u.Load()
 }
 
@@ -35,8 +37,29 @@ func Loads(s string) (interface{}, error) {
 	return u.Load()
 }
 
+type reader interface {
+	io.Reader
+	io.ByteReader
+}
+
+type bytereader struct {
+	io.Reader
+	bytebuf [1]byte
+}
+
+func (r *bytereader) ReadByte() (byte, error) {
+	n, err := r.Read(r.bytebuf[:])
+	if n == 1 {
+		return r.bytebuf[0], nil
+	}
+	if err == nil {
+		err = io.EOF
+	}
+	return 0, err
+}
+
 type Unpickler struct {
-	r              io.Reader
+	r              reader
 	proto          byte
 	currentFrame   *bytes.Reader
 	stack          []interface{}
@@ -49,16 +72,20 @@ type Unpickler struct {
 	MakeReadOnly   func(interface{}) (interface{}, error)
 }
 
-func NewUnpickler(r io.Reader) Unpickler {
+func NewUnpickler(ior io.Reader) Unpickler {
+	r, ok := ior.(reader)
+	if !ok {
+		r = &bytereader{Reader: ior}
+	}
 	return Unpickler{
 		r:    r,
-		memo: make(map[int]interface{}),
+		memo: make(map[int]interface{}, 256+128),
 	}
 }
 
 func (u *Unpickler) Load() (interface{}, error) {
-	u.metaStack = make([][]interface{}, 0)
-	u.stack = make([]interface{}, 0)
+	u.metaStack = make([][]interface{}, 0, 16)
+	u.stack = make([]interface{}, 0, 16)
 	u.proto = 0
 
 	for {
@@ -137,6 +164,17 @@ func (u *Unpickler) read(n int) ([]byte, error) {
 }
 
 func (u *Unpickler) readOne() (byte, error) {
+	var err error
+	var b byte
+	if u.currentFrame != nil {
+		b, err = u.currentFrame.ReadByte()
+	} else {
+		b, err = u.r.ReadByte()
+	}
+	if err == nil {
+		return b, nil
+	}
+
 	buf, err := u.read(1)
 	if err != nil {
 		return 0, err
@@ -165,17 +203,17 @@ func (u *Unpickler) readLine() ([]byte, error) {
 	return readLine(u.r)
 }
 
-func readLine(r io.Reader) (line []byte, err error) {
+func readLine(r reader) (line []byte, err error) {
 	line = make([]byte, 0, 32)
-	b := make([]byte, 1)
-	var n int
+
+	var b byte
 	for {
-		n, err = r.Read(b)
-		if n != 1 {
+		b, err = r.ReadByte()
+		if err != nil {
 			return
 		}
-		line = append(line, b[0])
-		if b[0] == '\n' || err != nil {
+		line = append(line, b)
+		if b == '\n' {
 			return
 		}
 	}
@@ -360,7 +398,7 @@ func loadFrame(u *Unpickler) error {
 	return u.loadFrame(int(frameSize))
 }
 
-//push persistent object; id is taken from string arg
+// push persistent object; id is taken from string arg
 func loadPersId(u *Unpickler) error {
 	if u.PersistentLoad == nil {
 		return fmt.Errorf("unsupported persistent ID encountered")
@@ -945,7 +983,7 @@ func loadObj(u *Unpickler) error {
 		return fmt.Errorf("OBJ class missing")
 	}
 	class := args[0]
-	args = args[1:len(args)]
+	args = args[1:]
 	return u.instantiate(class, args)
 }
 
@@ -1434,7 +1472,7 @@ func loadBuild(u *Unpickler) error {
 // push special markobject on stack
 func loadMark(u *Unpickler) error {
 	u.metaStack = append(u.metaStack, u.stack)
-	u.stack = make([]interface{}, 0)
+	u.stack = make([]interface{}, 0, 16)
 	return nil
 }
 
