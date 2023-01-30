@@ -4,8 +4,8 @@
 
 package pytorch
 
-// Converts the bits representation of a Half Float (16 bits) number to
-// an IEEE 754 float representation (32 bits)
+// FloatBits16to32 converts the bits representation of a Half Float (16 bits)
+// number to an IEEE 754 float representation (32 bits)
 // From http://www.fox-toolkit.org/ftp/fasthalffloatconversion.pdf
 func FloatBits16to32(u16 uint16) uint32 {
 	return mantissaTable[offsetTable[u16>>10]+(uint32(u16)&0x3ff)] + exponentTable[u16>>10]
