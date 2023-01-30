@@ -10,6 +10,7 @@ FLOAT_DTYPES = [
     torch.float16,  # or torch.half
     torch.float32,  # or torch.float
     torch.float64,  # or torch.double
+    torch.bfloat16
 ]
 
 INT_DTYPES = [

@@ -367,6 +367,45 @@ func (f *BoolStorage) SetFromFileWithSize(r io.Reader, size int) error {
 	return nil
 }
 
+// ----- BFloat16 -----
+
+type BFloat16StorageClass struct{}
+
+var _ StorageClassInterface = &BFloat16StorageClass{}
+
+func (f *BFloat16StorageClass) New(size int, location string) StorageInterface {
+	return &BFloat16Storage{
+		BaseStorage: BaseStorage{Size: size, Location: location},
+		Data:        nil,
+	}
+}
+
+type BFloat16Storage struct {
+	BaseStorage
+	Data []float32
+}
+
+var _ StorageInterface = &BFloat16Storage{}
+
+func (f *BFloat16Storage) SetFromFile(r io.Reader) error {
+	return setFromFile(f, r)
+}
+
+func (f *BFloat16Storage) SetFromFileWithSize(r io.Reader, size int) error {
+	data := make([]float32, size)
+	br := NewLimitedBufferReader(r, size, 2, 512)
+	for i := 0; i < size; i++ {
+		bytes, err := br.ReadNext()
+		if err != nil {
+			return err
+		}
+		u16 := binary.LittleEndian.Uint16(bytes)
+		data[i] = math.Float32frombits(uint32(u16) << 16)
+	}
+	f.Data = data
+	return nil
+}
+
 func setFromFile(s StorageInterface, r io.Reader) error {
 	sizeBuf := make([]byte, 8)
 	_, err := r.Read(sizeBuf)

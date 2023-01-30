@@ -9,12 +9,13 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
-	"github.com/nlpodyssey/gopickle/pickle"
-	"github.com/nlpodyssey/gopickle/types"
 	"io"
 	"math/big"
 	"os"
 	"path"
+
+	"github.com/nlpodyssey/gopickle/pickle"
+	"github.com/nlpodyssey/gopickle/types"
 )
 
 const hexMagicNumber = "1950a86a20f9469cfc6c"
@@ -328,6 +329,8 @@ func makePickleFindClass(fallback func(module, name string) (interface{}, error)
 			return &ByteStorageClass{}, nil
 		case "torch.BoolStorage":
 			return &BoolStorageClass{}, nil
+		case "torch.BFloat16Storage":
+			return &BFloat16StorageClass{}, nil
 		case "torch.nn.backends.thnn._get_thnn_function_backend":
 			// this is for historical pickle deserilaization, it is not used otherwise
 			return getThnnFunctionBackend{}, nil

@@ -145,6 +145,21 @@ func TestBoolTensors(t *testing.T) {
 	}
 }
 
+func TestBFloat16Tensors(t *testing.T) { // Float
+	for _, filename := range makeFilenames("tensor_bfloat16") {
+		t.Run(filename, func(t *testing.T) {
+			tensor := loadTensorFromFile(t, filename)
+			assertCommonTensorFields(t, tensor)
+			fs, fsOk := tensor.Source.(*BFloat16Storage)
+			if !fsOk {
+				t.Fatalf("expected *BFloat16Storage, got %#v", tensor.Source)
+			}
+			assertBaseStorageFields(t, fs.BaseStorage, 4, "cpu")
+			assertFloat32SliceEqual(t, fs.Data, []float32{1.2, -3.4, 5.6, -7.8}, 0.013)
+		})
+	}
+}
+
 func loadTensorFromFile(t *testing.T, filename string) *Tensor {
 	result, err := Load(path.Join("testdata", filename))
 	if err != nil {
