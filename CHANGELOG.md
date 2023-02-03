@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2023-01-31
+### Added
+- Support for unpickling torch `BFloat16Storage` (PyTorch `bfloat16` values are
+  converted to Go `float32`).
+
+### Changed
+- Performance improvements (mostly involving better buffered reading, and new
+  default capacities for maps and slices)
+- `types.Dict` is now implemented as a slice of `DictEntry`, rather than a slice
+  of pointers to it, to reduce extra allocations.
+- Test data has been regenerated with Python `3.10.9` and PyTorch `1.13.1`. 
+
 ## [0.1.0] - 2021-01-06
 ### Added
 - More and better documentation
