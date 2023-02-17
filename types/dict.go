@@ -68,3 +68,13 @@ func (d *Dict) MustGet(key interface{}) interface{} {
 func (d *Dict) Len() int {
 	return len(*d)
 }
+
+// Keys returns the keys of the dict
+func (d *Dict) Keys() []interface{} {
+	out := make([]interface{}, len(*d))
+	for i, entry := range *d {
+		out[i] = entry.Key
+	}
+
+	return out
+}
