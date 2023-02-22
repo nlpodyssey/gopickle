@@ -5,8 +5,10 @@
 package pickle
 
 import (
+	"fmt"
 	"github.com/nlpodyssey/gopickle/types"
 	"math/big"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -634,6 +636,16 @@ func TestByteArrayP5(t *testing.T) {
 		}
 	default:
 		t.Error("expected ByteArray, actual:", actual)
+	}
+}
+
+func TestFindClass(t *testing.T) {
+	u := &Unpickler{}
+	v, _ := u.findClass("builtins", "list")
+	actual, _ := fmt.Println(reflect.TypeOf(v))
+	expected, _ := fmt.Println(reflect.TypeOf(&types.List{}))
+	if actual != expected {
+		t.Errorf("expected %v, actual: %v", expected, actual)
 	}
 }
 

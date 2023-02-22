@@ -80,8 +80,11 @@ func (d *Dict) Keys() []interface{} {
 }
 
 func (*Dict) Call(args ...interface{}) (interface{}, error) {
-	if len(args) != 0 {
-		return args, nil
+	if len(args) == 0 {
+		return NewDict(), nil
 	}
-	return NewDict(), nil
+	if len(args) == 1 {
+		return args[0], nil
+	}
+	return nil, fmt.Errorf("Dict: invalid arguments: %#v", args)
 }
