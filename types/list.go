@@ -47,3 +47,10 @@ func (l *List) Get(i int) interface{} {
 func (l *List) Len() int {
 	return len(*l)
 }
+
+func (*List) Call(args ...interface{}) (interface{}, error) {
+	if len(args) != 0 {
+		return args, nil
+	}
+	return NewList(), nil
+}

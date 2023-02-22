@@ -78,3 +78,10 @@ func (d *Dict) Keys() []interface{} {
 
 	return out
 }
+
+func (*Dict) Call(args ...interface{}) (interface{}, error) {
+	if len(args) != 0 {
+		return args, nil
+	}
+	return NewDict(), nil
+}
