@@ -4,6 +4,8 @@
 
 package types
 
+import "fmt"
+
 // ListAppender is implemented by any value that exhibits a list-like
 // behaviour, allowing arbitrary values to be appended.
 type ListAppender interface {
@@ -46,4 +48,14 @@ func (l *List) Get(i int) interface{} {
 // Len returns the length of the List.
 func (l *List) Len() int {
 	return len(*l)
+}
+
+func (*List) Call(args ...interface{}) (interface{}, error) {
+	if len(args) == 0 {
+		return NewList(), nil
+	}
+	if len(args) == 1 {
+		return args[0], nil
+	}
+	return nil, fmt.Errorf("List: invalid arguments: %#v", args)
 }

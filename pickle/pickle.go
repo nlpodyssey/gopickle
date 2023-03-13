@@ -122,7 +122,13 @@ func (u *Unpickler) findClass(module, name string) (interface{}, error) {
 		case "OrderedDict":
 			return &types.OrderedDictClass{}, nil
 		}
-
+	case "builtins":
+		switch name {
+		case "list":
+			return &types.List{}, nil
+		case "dict":
+			return &types.Dict{}, nil
+		}
 	case "__builtin__":
 		switch name {
 		case "object":
@@ -139,7 +145,6 @@ func (u *Unpickler) findClass(module, name string) (interface{}, error) {
 	}
 	return types.NewGenericClass(module, name), nil
 }
-
 func (u *Unpickler) read(n int) ([]byte, error) {
 	buf := make([]byte, n)
 
