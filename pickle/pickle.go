@@ -134,6 +134,11 @@ func (u *Unpickler) findClass(module, name string) (interface{}, error) {
 		case "object":
 			return &types.ObjectClass{}, nil
 		}
+	case "array":
+		switch name {
+		case "_array_reconstructor":
+			return &types.Array{}, nil
+		}
 	case "copy_reg":
 		switch name {
 		case "_reconstructor":
@@ -145,6 +150,7 @@ func (u *Unpickler) findClass(module, name string) (interface{}, error) {
 	}
 	return types.NewGenericClass(module, name), nil
 }
+
 func (u *Unpickler) read(n int) ([]byte, error) {
 	buf := make([]byte, n)
 
