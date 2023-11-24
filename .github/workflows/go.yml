@@ -8,8 +8,8 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.17
       - name: Get dependencies
@@ -17,6 +17,6 @@ jobs:
       - name: Run tests and generate coverage report
         run: go test -race -coverprofile cover.out -covermode atomic ./...
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.7
+        uses: codecov/codecov-action@v3
         with:
           file: ./cover.out
