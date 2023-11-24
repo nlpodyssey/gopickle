@@ -4,7 +4,10 @@
 
 package types
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // ListAppender is implemented by any value that exhibits a list-like
 // behaviour, allowing arbitrary values to be appended.
@@ -58,4 +61,20 @@ func (*List) Call(args ...interface{}) (interface{}, error) {
 		return args[0], nil
 	}
 	return nil, fmt.Errorf("List: invalid arguments: %#v", args)
+}
+
+func (l *List) String() string {
+	if l == nil {
+		return "nil"
+	}
+	o := new(strings.Builder)
+	o.WriteString("[")
+	for i, v := range *l {
+		if i > 0 {
+			o.WriteString(", ")
+		}
+		fmt.Fprintf(o, "%v", v)
+	}
+	o.WriteString("]")
+	return o.String()
 }
