@@ -4,6 +4,6 @@
 
 module github.com/nlpodyssey/gopickle
 
-go 1.15
+go 1.17
 
 require golang.org/x/text v0.14.0
