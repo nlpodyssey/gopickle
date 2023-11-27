@@ -7,6 +7,7 @@ package types
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 // DictSetter is implemented by any value that exhibits a dict-like behaviour,
@@ -87,4 +88,20 @@ func (*Dict) Call(args ...interface{}) (interface{}, error) {
 		return args[0], nil
 	}
 	return nil, fmt.Errorf("Dict: invalid arguments: %#v", args)
+}
+
+func (d *Dict) String() string {
+	if d == nil {
+		return "nil"
+	}
+	o := new(strings.Builder)
+	o.WriteString("{")
+	for i, e := range *d {
+		if i > 0 {
+			o.WriteString(", ")
+		}
+		fmt.Fprintf(o, "%v: %v", e.Key, e.Value)
+	}
+	o.WriteString("}")
+	return o.String()
 }
