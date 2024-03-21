@@ -948,8 +948,8 @@ func loadDict(u *Unpickler) error {
 		return err
 	}
 	d := types.NewDict()
-	itemsLen := len(items)
-	for i := 0; i < itemsLen; i += 2 {
+	n := len(items)
+	for i := 0; i < n-1; i += 2 {
 		d.Set(items[i], items[i+1])
 	}
 	u.append(d)
