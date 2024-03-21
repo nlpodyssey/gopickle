@@ -6,6 +6,7 @@ package pickle
 
 import (
 	"fmt"
+	"io"
 	"math/big"
 	"reflect"
 	"strings"
@@ -751,6 +752,20 @@ func TestP4Carray(t *testing.T) {
 				t.Fatalf("got=%v, want=%v", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestIssue16(t *testing.T) {
+	var (
+		pkl  = "\x28\x88\x88\x88\x88\x88\x88\x88\x64"
+		want = io.EOF
+	)
+	_, err := Loads(pkl)
+	if err == nil {
+		t.Fatalf("expected an error")
+	}
+	if got, want := err.Error(), want.Error(); got != want {
+		t.Fatalf("invalid error:\ngot= %q\nwant=%q", got, want)
 	}
 }
 
