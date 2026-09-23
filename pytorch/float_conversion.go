@@ -14,9 +14,25 @@ func FloatBits16to32(u16 uint16) uint32 {
 // FloatBits32to16 converts the bits representation of an IEEE 754 float
 // representation (32 bits) to a half float (16 bits). It is a precise,
 // bit-for-bit inverse of FloatBits16to32 for all valid half float values.
-// Floats that cannot be represented as half floats are rounded.
+// Floats that cannot be represented as half floats are rounded using an
+// unspecified method.
+//
+// The paper that FloatBits16to32 and FloatBits32to16 is based on contains an
+// error: 32-bit NaNs with payloads beginning with 10 zero bits would become
+// infinity if truncated to 16 bits according to the algorithm in the paper.
+// We adopt the approach of truncating the least significant payload bits so
+// that FloatBits32to16 precisely inverts FloatBits16to32, but we add a special
+// case: 32-bit NaNs with payloads that would become 0 after truncation are
+// instead changed to have a payload of 1, which preserves the NaN.
 func FloatBits32to16(u32 uint32) uint16 {
-	return baseTable[(u32>>23)&0x1ff] + (uint16((u32 & 0x007fffff) >> shiftTable[(u32>>23)&0x1ff]))
+	exp := (u32 >> 23) & 0x1ff
+	mantissa32 := u32 & 0x007fffff
+	mantissa16 := uint16(mantissa32 >> shiftTable[exp])
+	out := baseTable[exp] + mantissa16
+	if (exp&0xff) == 0xff && mantissa16 == 0 && mantissa32 != 0 {
+		out |= 1 // NaN needs a payload
+	}
+	return out
 }
 
 // Tables for half -> float

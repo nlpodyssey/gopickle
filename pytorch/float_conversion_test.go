@@ -8,7 +8,7 @@ import (
 func TestHalfFloatRoundTrip(t *testing.T) {
 	t.Parallel()
 
-	for i := 0; i < math.MaxUint16; i++ {
+	for i := 0; i <= math.MaxUint16; i++ {
 		original := uint16(i)
 		converted := FloatBits16to32(original)
 		restored := FloatBits32to16(converted)
@@ -130,6 +130,14 @@ func TestFloatBits32to16(t *testing.T) {
 			bits: 0b0_11111111_01101101101010101010101, expected: 0b0_11111_0110110110},
 		{name: "negative NaN",
 			bits: 0b1_11111111_10000100001111011110111, expected: 0b1_11111_1000010000},
+		{name: "MSB NaN",
+			bits: 0b0_11111111_10000000000000000000000, expected: 0b0_11111_1000000000},
+		{name: "negative MSB NaN",
+			bits: 0b1_11111111_10000000000000000000000, expected: 0b1_11111_1000000000},
+		{name: "LSB NaN",
+			bits: 0b0_11111111_00000000000000000000001, expected: 0b0_11111_0000000001},
+		{name: "negative LSB NaN",
+			bits: 0b1_11111111_00000000000000000000001, expected: 0b1_11111_0000000001},
 	} {
 		tc := tc
 
@@ -143,4 +151,14 @@ func TestFloatBits32to16(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("Go NaN", func(t *testing.T) {
+		t.Parallel()
+
+		converted := FloatBits32to16(math.Float32bits(float32(math.NaN())))
+		if (converted&0b1_11111_0000000000) != 0b0_11111_0000000000 ||
+			(converted&0b0_00000_1111111111) == 0 {
+			t.Errorf("FloatBits32to16(math.NaN()) = 0b%016b, want NaN", converted)
+		}
+	})
 }
