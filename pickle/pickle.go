@@ -15,6 +15,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/nlpodyssey/gopickle/types"
 )
@@ -699,8 +700,53 @@ func loadUnicode(u *Unpickler) error {
 	if err != nil {
 		return err
 	}
-	u.append(string(line[:len(line)-1]))
+	str, err := decodeRawUnicodeEscape(line[:len(line)-1])
+	if err != nil {
+		return err
+	}
+	u.append(str)
 	return nil
+}
+
+// decodeRawUnicodeEscape decodes text in Python's "raw-unicode-escape"
+// encoding, used by the protocol 0 UNICODE opcode: each byte is a code
+// point from 0 to 255, except that \uXXXX and \UXXXXXXXX escapes stand
+// for any code point. As in Python, an escape only counts when it follows
+// an odd number of backslashes.
+func decodeRawUnicodeEscape(b []byte) (string, error) {
+	var sb strings.Builder
+	for i := 0; i < len(b); {
+		if b[i] != '\\' {
+			sb.WriteRune(rune(b[i]))
+			i++
+			continue
+		}
+		start := i
+		for i < len(b) && b[i] == '\\' {
+			i++
+		}
+		n := i - start
+		if n%2 == 0 || i >= len(b) || (b[i] != 'u' && b[i] != 'U') {
+			sb.WriteString(strings.Repeat("\\", n))
+			continue
+		}
+		sb.WriteString(strings.Repeat("\\", n-1))
+		size := 4
+		if b[i] == 'U' {
+			size = 8
+		}
+		i++
+		if i+size > len(b) {
+			return "", fmt.Errorf("truncated \\%c escape in UNICODE string", b[i-1])
+		}
+		code, err := strconv.ParseUint(string(b[i:i+size]), 16, 32)
+		if err != nil || code > unicode.MaxRune {
+			return "", fmt.Errorf("invalid \\%c escape in UNICODE string", b[i-1])
+		}
+		sb.WriteRune(rune(code))
+		i += size
+	}
+	return sb.String(), nil
 }
 
 // push Unicode string; counted UTF-8 string argument

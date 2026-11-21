@@ -159,7 +159,24 @@ func TestShortBinStringPython27P1(t *testing.T) {
 
 func TestUnicodePython27P0(t *testing.T) {
 	// pickle.dumps(u"Café", protocol=0)  # Python 2.7
-	loadsNoErrEqual(t, "VCaf\xe9\np0\n.", "Caf\xe9")
+	loadsNoErrEqual(t, "VCaf\xe9\np0\n.", "Café")
+}
+
+func TestUnicodeEscapesP0(t *testing.T) {
+	// pickle.dumps('é\x80\\\n\r中😀\x00', protocol=0)
+	loadsNoErrEqual(t,
+		"V\xe9\x80\\u005c\\u000a\\u000d\\u4e2d\\U0001f600\\u0000\np0\n.",
+		"é\u0080\\\n\r中😀\x00")
+	// An escape only counts after an odd number of backslashes
+	loadsNoErrEqual(t, "Va\\\\u0041\\\\\\u0041\\x\n.", "a\\\\u0041\\\\A\\x")
+}
+
+func TestUnicodeBadEscapeP0(t *testing.T) {
+	for _, s := range []string{"V\\u12\n.", "V\\U00110000\n.", "V\\uzzzz\n."} {
+		if _, err := Loads(s); err == nil {
+			t.Errorf("expected an error for %q", s)
+		}
+	}
 }
 
 func TestBinUnicodeP1(t *testing.T) {
